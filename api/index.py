@@ -10,7 +10,6 @@ import anthropic
 
 app = FastAPI(title="hf-bot Production-Grade Router")
 
-# Database & Key Configuration Verification
 MONGO_URI = os.getenv("MONGO_URI")
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -23,7 +22,6 @@ db_client = AsyncIOMotorClient(MONGO_URI)
 db = db_client["hf_bot_analytics"]
 logs_collection = db["chat_telemetry"]
 
-# Initialize Official SDK Framework Engines
 xai_client = openai.OpenAI(base_url="https://api.x.ai/v1", api_key=XAI_API_KEY)
 openai_client = openai.OpenAI(api_key=OPENAI_CODEX_KEY)
 anthropic_client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
@@ -39,10 +37,9 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
     user_ip = get_client_ip(request)
     client_id = x_client_uuid or user_ip
 
-    # Safely digest incoming payload parameters
     body = await request.json()
     messages = body.get("messages", [])
-    raw_model = str(body.get("model", "grok-2")).lower()
+    raw_model = str(body.get("model", "grok-4.3")).lower() # 👈 Default to active flagship
     last_user_message = messages[-1]["content"] if messages else ""
 
     # ========================================================
@@ -50,7 +47,6 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
     # ========================================================
     if "claude" in raw_model or "anthropic" in raw_model:
         provider = "anthropic"
-        # Map cleanly to modern active generation API endpoints
         resolved_model = "claude-sonnet-4-6" if "opus" not in raw_model else "claude-opus-4-7"
         
     elif "codex" in raw_model or "gpt-" in raw_model:
@@ -59,9 +55,12 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
         
     else:
         provider = "xai"
-        resolved_model = "grok-2"
+        # 🌟 FIX: Automatically route any generic grok request or legacy string straight to grok-4.3
+        if "grok" in raw_model or raw_model == "":
+            resolved_model = "grok-4.3"
+        else:
+            resolved_model = raw_model
 
-    # Write foundational metadata to database before entering stream loops
     log_doc = {
         "timestamp": datetime.utcnow(),
         "client_id": client_id,
@@ -75,11 +74,10 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
     log_id = inserted_log.inserted_id
 
     # ========================================================
-    # 🏎️ EXECUTION PATHS (Using proper SDK parameters)
+    # 🏎️ EXECUTION PATHS
     # ========================================================
     try:
         if provider == "anthropic":
-            # Translate message arrays to Anthropic's distinct structure requirements
             anthropic_messages = []
             system_prompt = ""
             for m in messages:
@@ -94,7 +92,6 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
             async def stream_anthropic():
                 accumulated_text = ""
                 try:
-                    # Enforce explicit parameters required by the SDK client
                     async with anthropic_client.messages.stream(
                         model=resolved_model,
                         max_tokens=4096,
@@ -103,14 +100,10 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
                     ) as stream:
                         async for text in stream.text_stream:
                             accumulated_text += text
-                            # Re-format the response back to look like OpenAI JSON chunks for the CLI
-                            chunk = {
-                                "choices": [{"delta": {"content": text}}]
-                            }
+                            chunk = {"choices": [{"delta": {"content": text}}]}
                             yield f"data: {json.dumps(chunk)}\n\n"
                     yield "data: [DONE]\n\n"
                 finally:
-                    # Thread-safe database synchronization closure
                     loop = asyncio.new_event_loop()
                     loop.run_until_complete(
                         logs_collection.update_one(
@@ -122,7 +115,6 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
             return StreamingResponse(stream_anthropic(), media_type="text/event-stream")
 
         else:
-            # Rebuild clean body for OpenAI/xAI specs to prevent passing invalid fields
             openai_payload = {
                 "model": resolved_model,
                 "messages": messages,
