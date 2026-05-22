@@ -192,15 +192,23 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
     body = await request.json()
     recipient_email = body.get("recipient_email")
     share_link = body.get("share_link", "https://github.com/your-username/hf-bot")
+    sender_name = body.get("sender_name")  # 🌟 Dynamic structural data fetch
     
     if not recipient_email:
-        raise HTTPException(status_code=400, detail="Missing required 'recipient_email' address variable parameter.")
+        raise HTTPException(status_code=400, detail="Missing required 'recipient_email' parameter.")
         
-    # Check server credentials safety gate
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
         raise HTTPException(status_code=500, detail="Server SMTP gateway credentials are unconfigured.")
 
-    # 🎨 Build the Custom HTML Developer Email Template
+    # 🎨 Adapt messaging semantics based on personalization parameters
+    if sender_name:
+        subject_line = f"🚀 {sender_name} invited you to collaborate on hf-bot"
+        greeting_copy = f"Your colleague, <strong>{sender_name}</strong>, has invited you to check out <code>hf-bot</code>"
+    else:
+        subject_line = "🚀 Code Collaboration Workspace Invitation: hf-bot"
+        greeting_copy = "Another programmer has invited you to check out <code>hf-bot</code>"
+
+    # Build the Custom HTML Developer Email Template using our dynamic copies
     html_template = f"""
     <!DOCTYPE html>
     <html>
@@ -221,7 +229,7 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
         <div class="card">
             <div class="logo">🤗 hf-bot Workspace Container</div>
             <p>Hey Dev!</p>
-            <p>Another programmer has invited you to check out <code>hf-bot</code>—a local sandbox terminal utility built for validating structural Hugging Face repository models, infrastructure metrics, and automating code tasks.</p>
+            <p>{greeting_copy}—a local sandbox terminal utility built for validating structural Hugging Face repository models, infrastructure metrics, and automating code tasks.</p>
             <div class="btn-container">
                 <a href="{share_link}" class="btn">Examine the Project Workspace</a>
             </div>
@@ -234,17 +242,15 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
     </html>
     """
 
-    # Multi-part message generation standard mapping wrappers
     message = MIMEMultipart("alternative")
     message["From"] = f"hf-bot Utility Workspace <{GMAIL_USER}>"
     message["To"] = recipient_email
-    message["Subject"] = "🚀 Code Collaboration Workspace Invitation: hf-bot"
+    message["Subject"] = subject_line
     
     message.attach(MIMEText(f"Check out hf-bot, the local agent interface utility framework at: {share_link}", "plain"))
     message.attach(MIMEText(html_template, "html"))
 
     try:
-        # Non-blocking SMTP handshakes
         await aiosmtplib.send(
             message,
             hostname="smtp.gmail.com",
@@ -255,11 +261,12 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
             timeout=15
         )
         
-        # 📈 Record successful transaction maps straight to MongoDB logs collection
+        # Log to MongoDB including the sender identity signature properties if tracked
         share_document = {
             "timestamp": datetime.utcnow(),
             "sender_client_uuid": client_id,
             "sender_ip_origin": user_ip,
+            "sender_name_provided": sender_name,
             "recipient_target_email": recipient_email,
             "resource_link_shared": share_link,
             "status": "delivered"
@@ -268,7 +275,6 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
         return {"status": "success", "recipient_email": recipient_email, "shared_link": share_link}
         
     except Exception as e:
-        # Save a record of the failure state for diagnostics
         await shares_collection.insert_one({
             "timestamp": datetime.utcnow(),
             "sender_client_uuid": client_id,
