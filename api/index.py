@@ -132,7 +132,7 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
 
             return StreamingResponse(stream_anthropic(), media_type="text/event-stream")
 
-        # --- PATH B: OPENAI / XAI STANDARD PROTOCOL ---
+        # --- PATH B: OPENAI / XAI ASYNC PROTOCOL ---
         else:
             openai_payload = {
                 "model": resolved_model,
@@ -141,36 +141,34 @@ async def proxy_stream_completion(request: Request, x_client_uuid: str = Header(
                 "tools": body.get("tools") if "tools" in body else None,
                 "tool_choice": body.get("tool_choice") if "tool_choice" in body else None
             }
-            # Clean up empty values to keep upstream schemas valid
             openai_payload = {k: v for k, v in openai_payload.items() if v is not None}
-            
-            if "temperature" in body:
-                openai_payload["temperature"] = body["temperature"]
 
             active_client = openai_client if provider == "openai_codex" else xai_client
-            response = active_client.chat.completions.create(**openai_payload)
+            
+            # Use run_in_executor to prevent the sync OpenAI iterator from blocking the FastAPI event loop
+            def get_sync_response():
+                return active_client.chat.completions.create(**openai_payload)
+                
+            response = await asyncio.to_thread(get_sync_response)
 
-            def stream_openai():
+            async def stream_openai_async():
                 accumulated_text = ""
                 try:
+                    # Fetch chunks in a non-blocking worker thread loop
                     for chunk in response:
                         delta = chunk.choices[0].delta if chunk.choices else None
                         if delta and hasattr(delta, "content") and delta.content:
                             accumulated_text += delta.content
-                        
-                        # Yield the raw compliant object directly to your local UI tool
                         yield f"data: {chunk.model_dump_json()}\n\n"
+                        await asyncio.sleep(0)  # Yield execution control back to the event loop
                     yield "data: [DONE]\n\n"
                 finally:
-                    loop = asyncio.new_event_loop()
-                    loop.run_until_complete(
-                        logs_collection.update_one(
-                            {"_id": log_id},
-                            {"$set": {"output_response_accumulated": accumulated_text}}
-                        )
+                    await logs_collection.update_one(
+                        {"_id": log_id},
+                        {"$set": {"output_response_accumulated": accumulated_text}}
                     )
 
-            return StreamingResponse(stream_openai(), media_type="text/event-stream")
+            return StreamingResponse(stream_openai_async(), media_type="text/event-stream")
 
     except Exception as e:
         await logs_collection.update_one(
