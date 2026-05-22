@@ -297,8 +297,11 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
             
             <div class="install-block">
                 <span class="cmd">pip install hf-bot</span>
-                <a href="{share_link}" class="pypi-link">open pypi ↗</a>
             </div>
+            <div style="margin-top: -12px; margin-bottom: 24px;">
+                <a href="https://github.com/kuyesu/hf-bot" class="pypi-link">Give us a star on GitHub ↗</a>
+            </div>
+
             
             <div class="usage-box">
                 <p style="margin: 0 0 6px 0; font-weight: 600; color: #1e293b;">Quick Start Usage:</p>
