@@ -200,11 +200,11 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
 
     # 🎨 Adapt messaging semantics based on personalization parameters
     if sender_name:
-        subject_line = f"🚀 {sender_name} invited you to collaborate on hf-bot"
-        greeting_copy = f"Your colleague, <strong>{sender_name}</strong>, has invited you to check out <code>hf-bot</code>"
+        subject_line = f"{sender_name} invited you to try hf-bot"
+        greeting_copy = f"<strong>{sender_name}</strong>, has invited you to try <code>hf-bot</code>"
     else:
-        subject_line = "🚀 Code Collaboration Workspace Invitation: hf-bot"
-        greeting_copy = "Another programmer has invited you to check out <code>hf-bot</code>"
+        subject_line = "One of your friends invited you to try hf-bot"
+        greeting_copy = "One of your friends has invited you to try <code>hf-bot</code>"
 
     # Build the Custom HTML Developer Email Template using our dynamic copies
     html_template = f"""
@@ -213,27 +213,105 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
     <head>
         <meta charset="utf-8">
         <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 24px; }}
-            .card {{ background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; max-width: 550px; margin: 0 auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }}
-            .logo {{ font-size: 24px; font-weight: bold; color: #06b6d4; margin-bottom: 16px; text-align: center; }}
-            p {{ color: #cbd5e1; line-height: 1.6; font-size: 15px; }}
-            .btn-container {{ text-align: center; margin: 28px 0; }}
-            .btn {{ background-color: #06b6d4; color: #0f172a !important; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; display: inline-block; transition: background 0.2s; }}
-            .footer {{ font-size: 12px; color: #64748b; text-align: center; margin-top: 24px; border-top: 1px solid #334155; padding-top: 16px; }}
-            code {{ background-color: #0f172a; color: #a7f3d0; padding: 2px 6px; border-radius: 4px; font-family: monospace; }}
+            body {{ 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+                background-color: #ffffff; 
+                color: #334155; 
+                padding: 40px 20px; 
+                margin: 0;
+            }}
+            .container {{ 
+                max-width: 520px; 
+                margin: 0 auto; 
+                padding: 0 10px;
+            }}
+            .logo {{ 
+                font-size: 20px; 
+                font-weight: bold; 
+                color: #0891b2; 
+                margin-bottom: 24px; 
+                letter-spacing: -0.5px;
+            }}
+            p {{ 
+                color: #475569; 
+                line-height: 1.6; 
+                font-size: 15px; 
+                margin: 16px 0;
+            }}
+            .install-block {{
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 24px 0;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                font-size: 14px;
+                color: #0f172a;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }}
+            .cmd {{
+                font-weight: 600;
+                color: #0f172a;
+            }}
+            .pypi-link {{
+                color: #0891b2;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 500;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }}
+            .pypi-link:hover {{
+                text-decoration: underline;
+            }}
+            .usage-box {{
+                border-left: 3px solid #cbd5e1;
+                padding-left: 16px;
+                margin: 24px 0;
+            }}
+            .footer {{ 
+                font-size: 12px; 
+                color: #94a3b8; 
+                margin-top: 40px; 
+                border-top: 1px solid #f1f5f9; 
+                padding-top: 16px; 
+            }}
+            code {{ 
+                background-color: #f1f5f9; 
+                color: #0f172a; 
+                padding: 2px 6px; 
+                border-radius: 4px; 
+                font-family: ui-monospace, monospace; 
+                font-size: 14px;
+            }}
         </style>
     </head>
     <body>
-        <div class="card">
-            <div class="logo">🤗 hf-bot Workspace Container</div>
-            <p>Hey Dev!</p>
+        <div class="container">
+            <div class="logo">🤗 hf-bot</div>
+            
+            <p>Hi!</p>
+            
             <p>{greeting_copy}—a local sandbox terminal utility built for validating structural Hugging Face repository models, infrastructure metrics, and automating code tasks.</p>
-            <div class="btn-container">
-                <a href="{share_link}" class="btn">Examine the Project Workspace</a>
+            
+            <div class="install-block">
+                <span class="cmd">pip install hf-bot</span>
+                <a href="{share_link}" class="pypi-link">open pypi ↗</a>
             </div>
-            <p>You can launch it right away using your terminal commands to gain full visibility into weight allocations, local file contexts, and automated execution diagnostics.</p>
+            
+            <div class="usage-box">
+                <p style="margin: 0 0 6px 0; font-weight: 600; color: #1e293b;">Quick Start Usage:</p>
+                <p style="margin: 0; color: #64748b;">
+                    Run <code>hf-bot</code> in your terminal and try typing:<br>
+                    <span style="color: #0f172a; font-style: italic; display: inline-block; margin-top: 6px;">
+                        "what models are currently trending on hf?"
+                    </span>
+                </p>
+            </div>
+            
             <div class="footer">
-                Sent safely from hf-bot Server Framework • Tracking ID: {client_id}
+                Sent safely via hf-bot Server • Session Tracking ID: {client_id}
             </div>
         </div>
     </body>
@@ -241,7 +319,7 @@ async def send_developer_share_email(request: Request, x_client_uuid: str = Head
     """
 
     message = MIMEMultipart("alternative")
-    message["From"] = f"hf-bot Utility Workspace <{GMAIL_USER}>"
+    message["From"] = f"hf-bot <{GMAIL_USER}>"
     message["To"] = recipient_email
     message["Subject"] = subject_line
     
