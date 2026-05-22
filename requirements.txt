@@ -4,3 +4,4 @@ openai
 anthropic
 motor
 dnspython
+aiosmtplib
