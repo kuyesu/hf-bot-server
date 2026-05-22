@@ -1,0 +1,61 @@
+{
+  "$schema": "https://fundingjson.org/schema/v1.json",
+  "name": "hf-bot",
+  "description": "An open-source terminal developer agent and local sandbox workspace utility for safely validating Hugging Face repositories and automating local terminal workflows.",
+  "project_url": "https://github.com/kuyesu/hf-bot",
+  "license": "MIT",
+  "stage": "production-ready",
+  "components": [
+    {
+      "name": "hf-bot CLI Client Engine",
+      "type": "software_library",
+      "description": "Local sandbox interactive session utility equipped with zero-latency streaming architecture, intent-based dynamic tool routing, and human-in-the-loop terminal execution safety gates."
+    },
+    {
+      "name": "hf-bot Server Proxy Gateway",
+      "type": "infrastructure",
+      "description": "Vercel-hosted FastAPI cloud routing engine coupled with MongoDB telemetry logging and an asynchronous server-side SMTP email sharing framework."
+    }
+  ],
+  "maintainers": [
+    {
+      "name": "Kuyesu Rogers",
+      "role": "Project Lead & AI engineer"
+    },
+    {
+      "name": "Richard Kimera",
+      "role": "Co-Lead & Core System Engineer"
+    },
+    {
+      "name": "Fred Kaggwa",
+      "role": "Cloud Infrastructure & DevOps Architect"
+    }
+  ],
+  "financials": {
+    "organization_type": "open_source_collective",
+    "currency": "USD",
+    "needs": [
+      {
+        "category": "infrastructure",
+        "amount": 3500.00,
+        "description": "Funding global API execution proxies, data persistence layers in MongoDB Atlas, and production server host nodes to scale the public Option A tier configuration."
+      },
+      {
+        "category": "development",
+        "amount": 8000.00,
+        "description": "Engineering advanced execution tools, implementing broader model support matrixes, and optimizing dynamic pre-flight caching layers to keep stream performance high."
+      },
+      {
+        "category": "security",
+        "amount": 1500.00,
+        "description": "Auditing local shell runtime interception processes and strengthening user privacy constraints within the centralized proxy telemetry layers."
+      }
+    ],
+    "funding_targets": [
+      {
+        "platform": "github_sponsors",
+        "url": "https://github.com/sponsors/kuyesu"
+      }
+    ]
+  }
+}
